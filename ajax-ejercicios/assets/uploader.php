@@ -1,6 +1,6 @@
 <?php
-//echo "Hola, respuesta desde el servidor";
-//var_dump($_FILES);
+echo "Hola, respuesta desde el servidor";
+var_dump($_FILES);
 
 if(isset($_FILES["file"])) {
   $name = $_FILES["file"]["name"];
