@@ -122,7 +122,139 @@
     <hr>
   </template>
   <script>
-    /* ********** Curso JavaScript: 139. WordPress REST API y Fetch (1 / 5) - #jonmircha ********** */
+
+    const d = document,
+      w = window,
+      $site = d.getElementById("site"),
+      $posts = d.getElementById("posts"),
+      $loader = d.querySelector(".loader"),
+      $template = d.getElementById("post-template").content,
+      $fragment = d.createDocumentFragment(),
+      /**abajo esta como acceder al wp directo a los endpoints.*/
+      DOMAIN = "https://www.malvestida.com",
+      SITE = `${DOMAIN}/wp-json`,
+      API_WP = `${SITE}/wp/v2`,
+      POSTS = `${API_WP}/posts?_embed&per_page=5&page=10`,
+      PAGES = `${API_WP}/pages`,
+      CATEGORIES = `${API_WP}/categories`;
+
+
+    let page = 1,
+      posts = 5;
+    /*fetch viejo*/
+    /*
+  fetch(POSTS)
+    .then(res => res.ok ? res.json() : Promise.reject(res))
+    .then(json => {
+      console.log(json);
+    })
+    */
+
+    function getSiteData() {
+      $loader
+      fetch(SITE)
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(json => {
+          console.log(json);
+          $site.innerHTML = `
+          <h3>  ¡¡Sitio Web!!  </h3>
+          <h2>
+            <a href="${json.url}" target="_blank"> ${json.name} </a>
+
+          </h2>
+          <p>${json.description}</p>
+          <p>${json.timezone_string}</p>`
+        })
+        .catch(err => {
+          console.log(err);
+          let message = err.statusText || "Ocurrio un error";
+          $site.innerHTML = `<p>Error ${err.status}: ${message} </p>`
+        });
+    }
+
+    function getPosts() {
+      $loader.style.display = "block";
+
+      fetch(`${POSTS}&per_page=${posts}&page=${page}`)
+        .then(res => res.ok ? res.json() : Promise.reject(res))
+        .then(json => {
+          console.log(json);
+
+          json.forEach(el => {
+
+            let categories = "",
+              tags = "";
+
+            el._embedded["wp:term"][0].forEach(el => categories += `<li>${el.name}</li>`)
+            el._embedded["wp:term"][1].forEach(el => tags += `<li>${el.name}</li>`)
+
+            $template.querySelector(".post-image").src = el._embedded["wp:featuredmedia"] ? el._embedded["wp:featuredmedia"][0].source_url : "";
+            $template.querySelector(".post-image").alt = el.title.rendered;
+            $template.querySelector(".post-title").innerHTML = el.title.rendered;
+            $template.querySelector(".post-author").innerHTML = `
+            <img src="${el._embedded.author[0].avatar_urls}" alt="${el._embedded.author[0].name}">
+            <figcaption>${el._embedded.author[0].name}</figcaption>
+            `;
+            $template.querySelector(".post-date").innerHTML = new Date(el.date).toLocaleDateString();
+            $template.querySelector(".post-link").href = el.link;
+            /* al final con el hellip cambiamos los corchetes que se veian por solo puntos suspensivos....*/
+            $template.querySelector(".post-excerpt").innerHTML = el.excerpt.rendered.replace("[&hellip;]", "....");
+            $template.querySelector(".post-categories").innerHTML = `
+            <p>Categorias</p>
+            <ul>${categories}</ul>
+            `;
+            $template.querySelector(".post-tags").innerHTML = `
+            <p>Etiquetas</p>
+            <ul>${tags}</ul>
+            `;
+
+            $template.querySelector(".post-content > article").innerHTML = el.content.rendered;
+
+
+
+
+            let $clone = d.importNode($template, true);
+            $fragment.appendChild($clone);
+
+
+
+
+          });
+
+          /* hacemos una sola insersion al doom */
+          $posts.appendChild($fragment)
+          $loader.style.display = "none";
+
+        })
+        .catch(err => {
+          console.log(err);
+          let message = err.statusText || "Ocurrio un error";
+          $posts.innerHTML = `<p>Error ${err.status}: ${message} </p>`;
+          $loader.style.display = "none";
+        });
+
+    }
+    d.addEventListener("DOMContentLoaded", e => {
+      getSiteData();
+      getPosts();
+    });
+
+
+    w.addEventListener("scroll", e => {
+      const { scrollTop, clientHeight, scrollHeight } = d.documentElement;
+
+      // console.log(d.documentElement);
+      console.log(scrollTop, scrollHeight, clientHeight);
+
+      if (scrollTop + clientHeight >= scrollHeight) {
+        console.log("Cargar más posts");
+        page++;
+        getPosts();
+      }
+    })
+
+
+
     /* ********** Curso JavaScript: 140. WordPress REST API y Fetch (2 / 5) - #jonmircha ********** */
     /* ********** Curso JavaScript: 141. WordPress REST API y Fetch (3 / 5) - #jonmircha ********** */
     /* ********** Curso JavaScript: 142. WordPress REST API y Fetch (4 / 5) - #jonmircha ********** */
